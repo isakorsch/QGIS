@@ -57,6 +57,16 @@ void QgsBlockingNetworkRequest::setAuthCfg( const QString &authCfg )
   mAuthCfg = authCfg;
 }
 
+bool QgsBlockingNetworkRequest::logError()
+{
+    return mlogError;
+}
+
+void QgsBlockingNetworkRequest::setLogError(bool logError)
+{
+    mlogError = logError;
+}
+
 QgsBlockingNetworkRequest::ErrorCode QgsBlockingNetworkRequest::get( QNetworkRequest &request, bool forceRefresh, QgsFeedback *feedback, RequestFlags requestFlags )
 {
   return doRequest( Qgis::HttpMethod::Get, request, forceRefresh, feedback, requestFlags );
@@ -145,8 +155,11 @@ QgsBlockingNetworkRequest::ErrorCode QgsBlockingNetworkRequest::doRequest( Qgis:
   if ( !mAuthCfg.isEmpty() &&  !QgsApplication::authManager()->updateNetworkRequest( request, mAuthCfg ) )
   {
     mErrorCode = NetworkError;
+
     mErrorMessage = errorMessageFailedAuth();
-    QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+    if (mlogError) {
+        QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+    }
     return NetworkError;
   }
 
@@ -186,9 +199,9 @@ QgsBlockingNetworkRequest::ErrorCode QgsBlockingNetworkRequest::doRequest( Qgis:
     {
       mErrorCode = NetworkError;
       mErrorMessage = errorMessageFailedAuth();
-      QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
-      if ( requestMadeFromMainThread )
-        authRequestBufferNotEmpty.wakeAll();
+      if (mlogError) {
+          QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+      }
       success = false;
     }
     else
@@ -352,8 +365,11 @@ void QgsBlockingNetworkRequest::replyFinished()
         mReply->request();
         if ( toUrl == mReply->url() )
         {
+
           mErrorMessage = tr( "Redirect loop detected: %1" ).arg( toUrl.toString() );
-          QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+          if (mlogError) {
+              QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+          }
           mReplyContent.clear();
         }
         else
@@ -365,7 +381,9 @@ void QgsBlockingNetworkRequest::replyFinished()
             mReplyContent.clear();
             mErrorMessage = errorMessageFailedAuth();
             mErrorCode = NetworkError;
-            QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+            if (mlogError) {
+                QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+            }
             emit finished();
             Q_NOWARN_DEPRECATED_PUSH
             emit downloadFinished();
@@ -396,7 +414,9 @@ void QgsBlockingNetworkRequest::replyFinished()
             mReplyContent.clear();
             mErrorMessage = errorMessageFailedAuth();
             mErrorCode = NetworkError;
-            QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+            if (mlogError) {
+                QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+            }
             emit finished();
             Q_NOWARN_DEPRECATED_PUSH
             emit downloadFinished();
@@ -455,7 +475,9 @@ void QgsBlockingNetworkRequest::replyFinished()
         {
           mErrorMessage = tr( "empty response: %1" ).arg( mReply->errorString() );
           mErrorCode = ServerExceptionError;
-          QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+          if (mlogError) {
+              QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+          }
         }
         mReplyContent.setContent( content );
       }
@@ -466,7 +488,9 @@ void QgsBlockingNetworkRequest::replyFinished()
       {
         mErrorMessage = mReply->errorString();
         mErrorCode = ServerExceptionError;
-        QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+        if (mlogError) {
+            QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
+        }
       }
       mReplyContent = QgsNetworkReplyContent( mReply );
       mReplyContent.setContent( mReply->readAll() );
@@ -480,7 +504,8 @@ void QgsBlockingNetworkRequest::replyFinished()
     mReply->deleteLater();
     mReply = nullptr;
   }
-
+  mErrorMessage.clear();
+  mErrorCode = NoError;
   emit finished();
   Q_NOWARN_DEPRECATED_PUSH
   emit downloadFinished();
