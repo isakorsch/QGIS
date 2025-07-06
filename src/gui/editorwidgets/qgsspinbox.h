@@ -38,7 +38,7 @@ class QgsSpinBoxLineEdit;
  * \brief A spin box with a clear button that will set the value to the defined clear value.
  *
  * The clear value can be either the minimum or the maiximum value of the spin box or a custom value.
- * This value can then be handled by a special value text.
+ * This value can then be handled by a clear value text.
  */
 class GUI_EXPORT QgsSpinBox : public QSpinBox
 {
@@ -52,8 +52,8 @@ class GUI_EXPORT QgsSpinBox : public QSpinBox
 #endif
 
     Q_OBJECT
-    Q_PROPERTY( bool showClearButton READ showClearButton WRITE setShowClearButton )
-    Q_PROPERTY( bool clearValue READ clearValue WRITE setClearValue )
+
+    Q_PROPERTY( int clearValue READ clearValue WRITE setClearValue )
     Q_PROPERTY( bool expressionsEnabled READ expressionsEnabled WRITE setExpressionsEnabled )
 
   public:
@@ -137,6 +137,7 @@ class GUI_EXPORT QgsSpinBox : public QSpinBox
     void setSpecialValueText( const QString &txt );
 
     int valueFromText( const QString &text ) const override;
+    QString textFromValue( int value ) const override;
     QValidator::State validate( QString &input, int &pos ) const override;
     void stepBy( int steps ) override;
 
@@ -203,18 +204,19 @@ class GUI_EXPORT QgsSpinBox : public QSpinBox
     void focusOutEvent( QFocusEvent *event ) override;
 
   private slots:
-    void changed( int value );
+    void changed();
     void onLastEditTimeout();
 
   private:
     int frameWidth() const;
-    bool shouldShowClearForValue( int value ) const;
+    bool shouldShowClearForValue() const;
 
     QgsSpinBoxLineEdit *mLineEdit = nullptr;
 
     bool mShowClearButton = true;
     ClearValueMode mClearValueMode = MinimumValue;
     int mCustomClearValue = 0;
+    QString mClearValueText;
 
     bool mExpressionsEnabled = true;
 

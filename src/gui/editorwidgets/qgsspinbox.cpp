@@ -77,12 +77,12 @@ void QgsSpinBox::changeEvent( QEvent *event )
     lineEdit()->setFont( font() );
   }
 
-  mLineEdit->setShowClearButton( shouldShowClearForValue( value() ) );
+  mLineEdit->setShowClearButton( shouldShowClearForValue() );
 }
 
 void QgsSpinBox::paintEvent( QPaintEvent *event )
 {
-  mLineEdit->setShowClearButton( shouldShowClearForValue( value() ) );
+  mLineEdit->setShowClearButton( shouldShowClearForValue() );
   QSpinBox::paintEvent( event );
 }
 
@@ -124,9 +124,9 @@ void QgsSpinBox::focusOutEvent( QFocusEvent *event )
   onLastEditTimeout();
 }
 
-void QgsSpinBox::changed( int value )
+void QgsSpinBox::changed()
 {
-  mLineEdit->setShowClearButton( shouldShowClearForValue( value ) );
+  mLineEdit->setShowClearButton( shouldShowClearForValue() );
   mLastEditTimer->start();
 }
 
@@ -145,46 +145,66 @@ void QgsSpinBox::onLastEditTimeout()
 void QgsSpinBox::clear()
 {
   setValue( clearValue() );
-  if ( mLineEdit->isNull() )
-    mLineEdit->clear();
+  //if ( mLineEdit->isNull() )
+  //  mLineEdit->clear();
 }
 
 void QgsSpinBox::setClearValue( int customValue, const QString &specialValueText )
 {
-  if ( mClearValueMode == CustomValue && mCustomClearValue == customValue && QAbstractSpinBox::specialValueText() == specialValueText )
+  if ( mClearValueMode == CustomValue && mCustomClearValue == customValue && mClearValueText == specialValueText )
   {
     return;
   }
 
   mClearValueMode = CustomValue;
   mCustomClearValue = customValue;
+  mClearValueText = specialValueText;
 
   if ( !specialValueText.isEmpty() )
   {
     const int v = value();
     clear();
-    setSpecialValueText( specialValueText );
+    if (mCustomClearValue == minimum()) {
+        setSpecialValueText( specialValueText );
+    }
     setValue( v );
   }
 }
 
 void QgsSpinBox::setClearValueMode( QgsSpinBox::ClearValueMode mode, const QString &specialValueText )
 {
-  if ( mClearValueMode == mode && mCustomClearValue == 0 && QAbstractSpinBox::specialValueText() == specialValueText )
+  if ( mClearValueMode == MinimumValue  && mCustomClearValue == minimum() && QAbstractSpinBox::specialValueText() == specialValueText )
+  {
+    return;
+  }
+
+  if ( mClearValueMode == MaximumValue && mCustomClearValue == maximum() && mClearValueText == specialValueText )
   {
     return;
   }
 
   mClearValueMode = mode;
-  mCustomClearValue = 0;
-
-  if ( !specialValueText.isEmpty() )
-  {
-    const int v = value();
-    clear();
-    setSpecialValueText( specialValueText );
-    setValue( v );
+  const QString strippedSpecialValueText = stripped(specialValueText);
+  if (mClearValueMode == MinimumValue) {
+     mCustomClearValue = minimum();
+     if ( !strippedSpecialValueText.isEmpty() )
+     {
+       const int v = value();
+       clear();
+       setSpecialValueText( specialValueText );
+       setValue( v );
+     }
   }
+  else if (mClearValueMode == MaximumValue) {
+      mCustomClearValue = maximum();
+      if (!strippedSpecialValueText.isEmpty()) {
+          mClearValueText = specialValueText;
+      }
+  }
+  else if (!strippedSpecialValueText.isEmpty()) {
+      mClearValueText = specialValueText;
+  }
+
 }
 
 int QgsSpinBox::clearValue() const
@@ -216,6 +236,15 @@ void QgsSpinBox::setSpecialValueText( const QString &txt )
   }
 }
 
+QString QgsSpinBox::textFromValue(int value) const {
+    if (!(mClearValueMode == MinimumValue) && value == mCustomClearValue && !(value == minimum())) {
+        return mClearValueText;
+        }
+    else {
+        return QSpinBox::textFromValue(value);
+    }
+}
+
 int QgsSpinBox::valueFromText( const QString &text ) const
 {
   if ( !mExpressionsEnabled )
@@ -226,7 +255,7 @@ int QgsSpinBox::valueFromText( const QString &text ) const
   const QString trimmedText = stripped( text );
   if ( trimmedText.isEmpty() )
   {
-    return mShowClearButton ? clearValue() : value();
+    mShowClearButton ? clearValue() : value();
   }
 
   return std::round( QgsExpression::evaluateToDouble( trimmedText, value() ) );
@@ -272,13 +301,13 @@ int QgsSpinBox::frameWidth() const
   return style()->pixelMetric( QStyle::PM_DefaultFrameWidth );
 }
 
-bool QgsSpinBox::shouldShowClearForValue( const int value ) const
+bool QgsSpinBox::shouldShowClearForValue() const
 {
   if ( !mShowClearButton || !isEnabled() )
   {
     return false;
   }
-  return value != clearValue();
+  return value() != clearValue();
 }
 
 QString QgsSpinBox::stripped( const QString &originalText ) const
