@@ -202,6 +202,8 @@ QgsBlockingNetworkRequest::ErrorCode QgsBlockingNetworkRequest::doRequest( Qgis:
       if (mlogError) {
           QgsMessageLog::logMessage( mErrorMessage, tr( "Network" ) );
       }
+      if ( requestMadeFromMainThread )
+        authRequestBufferNotEmpty.wakeAll();
       success = false;
     }
     else
