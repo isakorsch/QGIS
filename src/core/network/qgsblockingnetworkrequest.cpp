@@ -506,8 +506,6 @@ void QgsBlockingNetworkRequest::replyFinished()
     mReply->deleteLater();
     mReply = nullptr;
   }
-  mErrorMessage.clear();
-  mErrorCode = NoError;
   emit finished();
   Q_NOWARN_DEPRECATED_PUSH
   emit downloadFinished();
