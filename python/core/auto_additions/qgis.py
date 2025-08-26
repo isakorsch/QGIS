@@ -6072,6 +6072,19 @@ Qgis.PlotAxisSuffixPlacement.__doc__ = """Placement options for suffixes in the 
 # --
 Qgis.PlotAxisSuffixPlacement.baseClass = Qgis
 # monkey patching scoped based enum
+Qgis.PlotAxisType.Interval.__doc__ = "The axis represents a range of values"
+Qgis.PlotAxisType.Categorical.__doc__ = "The axis represents categories"
+Qgis.PlotAxisType.__doc__ = """Plots axis types.
+
+.. versionadded:: 4.0
+
+* ``Interval``: The axis represents a range of values
+* ``Categorical``: The axis represents categories
+
+"""
+# --
+Qgis.PlotAxisType.baseClass = Qgis
+# monkey patching scoped based enum
 Qgis.DpiMode.All.__doc__ = "All"
 Qgis.DpiMode.Off.__doc__ = "Off"
 Qgis.DpiMode.QGIS.__doc__ = "QGIS"
@@ -6603,12 +6616,17 @@ ProcessingAlgorithmFlags = Qgis  # dirty hack since SIP seems to introduce the f
 # monkey patching scoped based enum
 Qgis.ProcessingAlgorithmDocumentationFlag.RegeneratesPrimaryKey.__doc__ = "Algorithm always drops any existing primary keys or FID values and regenerates them in outputs"
 Qgis.ProcessingAlgorithmDocumentationFlag.RegeneratesPrimaryKeyInSomeScenarios.__doc__ = "Algorithm may drop the existing primary keys or FID values in some scenarios, depending on algorithm inputs and parameters"
+Qgis.ProcessingAlgorithmDocumentationFlag.RespectsEllipsoid.__doc__ = "Algorithm respects the context's ellipsoid settings, and uses ellipsoidal based measurements. \n.. versionadded:: 4.0"
 Qgis.ProcessingAlgorithmDocumentationFlag.__doc__ = """Flags describing algorithm behavior for documentation purposes.
 
 .. versionadded:: 3.40
 
 * ``RegeneratesPrimaryKey``: Algorithm always drops any existing primary keys or FID values and regenerates them in outputs
 * ``RegeneratesPrimaryKeyInSomeScenarios``: Algorithm may drop the existing primary keys or FID values in some scenarios, depending on algorithm inputs and parameters
+* ``RespectsEllipsoid``: Algorithm respects the context's ellipsoid settings, and uses ellipsoidal based measurements.
+
+  .. versionadded:: 4.0
+
 
 """
 # --
@@ -7896,6 +7914,19 @@ Qgis.LayerTreeFilterFlag.__doc__ = """Layer tree filter flags.
 Qgis.LayerTreeFilterFlag.baseClass = Qgis
 Qgis.LayerTreeFilterFlags.baseClass = Qgis
 LayerTreeFilterFlags = Qgis  # dirty hack since SIP seems to introduce the flags in module
+# monkey patching scoped based enum
+Qgis.MapLayerLegendFlag.ExcludeByDefault.__doc__ = "If set, the layer should not be included in legends by default, and must be manually added by a user"
+Qgis.MapLayerLegendFlag.__doc__ = """Map layer legend flags.
+
+.. versionadded:: 4.0
+
+* ``ExcludeByDefault``: If set, the layer should not be included in legends by default, and must be manually added by a user
+
+"""
+# --
+Qgis.MapLayerLegendFlag.baseClass = Qgis
+Qgis.MapLayerLegendFlags.baseClass = Qgis
+MapLayerLegendFlags = Qgis  # dirty hack since SIP seems to introduce the flags in module
 QgsLegendStyle.Style = Qgis.LegendComponent
 # monkey patching scoped based enum
 QgsLegendStyle.Undefined = Qgis.LegendComponent.Undefined
@@ -10055,6 +10086,9 @@ QgsLayoutRenderContext.FlagAlwaysUseGlobalMasks = Qgis.LayoutRenderFlag.AlwaysUs
 QgsLayoutRenderContext.Flag.FlagAlwaysUseGlobalMasks = Qgis.LayoutRenderFlag.AlwaysUseGlobalMasks
 QgsLayoutRenderContext.FlagAlwaysUseGlobalMasks.is_monkey_patched = True
 QgsLayoutRenderContext.FlagAlwaysUseGlobalMasks.__doc__ = "When applying clipping paths for selective masking, always use global (\"entire map\") paths, instead of calculating local clipping paths per rendered feature. This results in considerably more complex layout exports in all current Qt versions. This flag only applies to vector layout exports. \n.. versionadded:: 3.38"
+QgsLayoutRenderContext.LimitCoverageLayerRenderToCurrentFeature = Qgis.LayoutRenderFlag.LimitCoverageLayerRenderToCurrentFeature
+QgsLayoutRenderContext.LimitCoverageLayerRenderToCurrentFeature.is_monkey_patched = True
+QgsLayoutRenderContext.LimitCoverageLayerRenderToCurrentFeature.__doc__ = "Limit coverage layer rendering to the current atlas feature. \n.. versionadded:: 4.0"
 Qgis.LayoutRenderFlag.__doc__ = """Flags for controlling how a layout is rendered.
 
 .. note::
@@ -10119,6 +10153,10 @@ Qgis.LayoutRenderFlag.__doc__ = """Flags for controlling how a layout is rendere
 
 
   Available as ``QgsLayoutRenderContext.FlagAlwaysUseGlobalMasks`` in older QGIS releases.
+
+* ``LimitCoverageLayerRenderToCurrentFeature``: Limit coverage layer rendering to the current atlas feature.
+
+  .. versionadded:: 4.0
 
 
 """
@@ -11404,6 +11442,10 @@ Qgis.MouseHandlesAction.ResizeLeftUp.__doc__ = "Resize left up (Top left handle)
 Qgis.MouseHandlesAction.ResizeRightUp.__doc__ = "Resize right up (Top right handle)"
 Qgis.MouseHandlesAction.ResizeLeftDown.__doc__ = "Resize left down (Bottom left handle)"
 Qgis.MouseHandlesAction.ResizeRightDown.__doc__ = "Resize right down (Bottom right handle)"
+Qgis.MouseHandlesAction.RotateTopLeft.__doc__ = "Rotate from top left handle. \n.. versionadded:: 4.0"
+Qgis.MouseHandlesAction.RotateTopRight.__doc__ = "Rotate from top right handle. \n.. versionadded:: 4.0"
+Qgis.MouseHandlesAction.RotateBottomLeft.__doc__ = "Rotate from bottom left handle. \n.. versionadded:: 4.0"
+Qgis.MouseHandlesAction.RotateBottomRight.__doc__ = "Rotate right bottom right handle. \n.. versionadded:: 4.0"
 Qgis.MouseHandlesAction.SelectItem.__doc__ = "Select item"
 Qgis.MouseHandlesAction.NoAction.__doc__ = "No action"
 Qgis.MouseHandlesAction.__doc__ = """Action to be performed by the mouse handles
@@ -11419,6 +11461,22 @@ Qgis.MouseHandlesAction.__doc__ = """Action to be performed by the mouse handles
 * ``ResizeRightUp``: Resize right up (Top right handle)
 * ``ResizeLeftDown``: Resize left down (Bottom left handle)
 * ``ResizeRightDown``: Resize right down (Bottom right handle)
+* ``RotateTopLeft``: Rotate from top left handle.
+
+  .. versionadded:: 4.0
+
+* ``RotateTopRight``: Rotate from top right handle.
+
+  .. versionadded:: 4.0
+
+* ``RotateBottomLeft``: Rotate from bottom left handle.
+
+  .. versionadded:: 4.0
+
+* ``RotateBottomRight``: Rotate right bottom right handle.
+
+  .. versionadded:: 4.0
+
 * ``SelectItem``: Select item
 * ``NoAction``: No action
 

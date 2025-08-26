@@ -4673,7 +4673,7 @@ void TestProcessingGui::testMultipleInputWrapper()
   QString path1 = TEST_DATA_DIR + QStringLiteral( "/landsat-f32-b1.tif" );
   QString path2 = TEST_DATA_DIR + QStringLiteral( "/landsat.tif" );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [path1, path2]( Qgis::ProcessingMode type ) {
     QgsProcessingParameterMultipleLayers param( QStringLiteral( "multi" ), QStringLiteral( "multi" ), Qgis::ProcessingSourceType::Vector, QVariant(), false );
 
     QgsProcessingMultipleLayerWidgetWrapper wrapper( &param, type );
@@ -7100,7 +7100,7 @@ void TestProcessingGui::testMapLayerWrapper()
   QgsRasterLayer *raster = new QgsRasterLayer( QStringLiteral( TEST_DATA_DIR ) + "/raster/band1_byte_ct_epsg4326.tif", QStringLiteral( "band1_byte" ) );
   QgsProject::instance()->addMapLayer( raster );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [raster, polygon]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterMapLayer param( QStringLiteral( "layer" ), QStringLiteral( "layer" ), false );
 
@@ -7269,7 +7269,7 @@ void TestProcessingGui::testRasterLayerWrapper()
   QgsRasterLayer *raster2 = new QgsRasterLayer( QStringLiteral( TEST_DATA_DIR ) + "/raster/band1_byte_ct_epsg4326.tif", QStringLiteral( "band1_byte2" ) );
   QgsProject::instance()->addMapLayer( raster2 );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [raster, raster2]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterRasterLayer param( QStringLiteral( "raster" ), QStringLiteral( "raster" ), false );
 
@@ -7414,7 +7414,7 @@ void TestProcessingGui::testVectorLayerWrapper()
   QgsVectorLayer *noGeom = new QgsVectorLayer( QStringLiteral( "None" ), QStringLiteral( "l1" ), QStringLiteral( "memory" ) );
   QgsProject::instance()->addMapLayer( noGeom );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [point, polygon]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterVectorLayer param( QStringLiteral( "vector" ), QStringLiteral( "vector" ), QList<int>() << static_cast<int>( Qgis::ProcessingSourceType::Vector ), false );
 
@@ -7587,7 +7587,7 @@ void TestProcessingGui::testFeatureSourceWrapper()
   QgsVectorLayer *noGeom = new QgsVectorLayer( QStringLiteral( "None" ), QStringLiteral( "l1" ), QStringLiteral( "memory" ) );
   QgsProject::instance()->addMapLayer( noGeom );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [point, polygon]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterFeatureSource param( QStringLiteral( "source" ), QStringLiteral( "source" ), QList<int>() << static_cast<int>( Qgis::ProcessingSourceType::Vector ), false );
 
@@ -7762,7 +7762,7 @@ void TestProcessingGui::testMeshLayerWrapper()
   mesh2->setCrs( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:4326" ) ) );
   QgsProject::instance()->addMapLayer( mesh2 );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [mesh, mesh2]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterMeshLayer param( QStringLiteral( "mesh" ), QStringLiteral( "mesh" ), false );
 
@@ -8076,7 +8076,7 @@ void TestProcessingGui::testMapThemeWrapper()
 
 void TestProcessingGui::testDateTimeWrapper()
 {
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = []( Qgis::ProcessingMode type ) {
     // non optional, no existing themes
     QgsProcessingParameterDateTime param( QStringLiteral( "datetime" ), QStringLiteral( "datetime" ), Qgis::ProcessingDateTimeParameterDataType::DateTime, QVariant(), false );
 
@@ -8791,6 +8791,7 @@ void TestProcessingGui::testDatabaseTableWrapper()
 void TestProcessingGui::testFieldMapWidget()
 {
   QgsProcessingFieldMapPanelWidget widget;
+  widget.mSkipConfirmDialog = true;
 
   QVariantMap map;
   map.insert( QStringLiteral( "name" ), QStringLiteral( "n" ) );
@@ -8862,6 +8863,7 @@ void TestProcessingGui::testFieldMapWrapper()
 
     QgsProcessingContext context;
     QWidget *w = wrapper.createWrappedWidget( context );
+    qobject_cast<QgsProcessingFieldMapPanelWidget *>( w )->mSkipConfirmDialog = true;
 
     QVariantMap map;
     map.insert( QStringLiteral( "name" ), QStringLiteral( "n" ) );
@@ -8920,6 +8922,7 @@ void TestProcessingGui::testFieldMapWrapper()
     param.setParentLayerParameterName( QStringLiteral( "other" ) );
     QgsProcessingFieldMapWidgetWrapper wrapper2( &param, type );
     w = wrapper2.createWrappedWidget( context );
+    qobject_cast<QgsProcessingFieldMapPanelWidget *>( w )->mSkipConfirmDialog = true;
 
     QSignalSpy spy2( &wrapper2, &QgsProcessingFieldMapWidgetWrapper::widgetValueHasChanged );
     wrapper2.setWidgetValue( QVariantList() << map, context );
@@ -9062,6 +9065,7 @@ void TestProcessingGui::testAggregateWrapper()
 
     QgsProcessingContext context;
     QWidget *w = wrapper.createWrappedWidget( context );
+    qobject_cast<QgsProcessingAggregatePanelWidget *>( w )->mSkipConfirmDialog = true;
 
     QVariantMap map;
     map.insert( QStringLiteral( "name" ), QStringLiteral( "n" ) );
@@ -9122,6 +9126,7 @@ void TestProcessingGui::testAggregateWrapper()
     param.setParentLayerParameterName( QStringLiteral( "other" ) );
     QgsProcessingAggregateWidgetWrapper wrapper2( &param, type );
     w = wrapper2.createWrappedWidget( context );
+    qobject_cast<QgsProcessingAggregatePanelWidget *>( w )->mSkipConfirmDialog = true;
 
     QSignalSpy spy2( &wrapper2, &QgsProcessingAggregateWidgetWrapper::widgetValueHasChanged );
     wrapper2.setWidgetValue( QVariantList() << map, context );
@@ -10036,7 +10041,7 @@ void TestProcessingGui::testFeatureSourceOptionsWidget()
 
 void TestProcessingGui::testVectorOutWrapper()
 {
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = []( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterVectorDestination param( QStringLiteral( "vector" ), QStringLiteral( "vector" ) );
 
@@ -10110,7 +10115,7 @@ void TestProcessingGui::testVectorOutWrapper()
 
 void TestProcessingGui::testSinkWrapper()
 {
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = []( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterFeatureSink param( QStringLiteral( "sink" ), QStringLiteral( "sink" ) );
 
@@ -10184,7 +10189,7 @@ void TestProcessingGui::testSinkWrapper()
 
 void TestProcessingGui::testRasterOutWrapper()
 {
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = []( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterRasterDestination param( QStringLiteral( "raster" ), QStringLiteral( "raster" ) );
 
@@ -10258,7 +10263,7 @@ void TestProcessingGui::testRasterOutWrapper()
 
 void TestProcessingGui::testFileOutWrapper()
 {
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = []( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterFileDestination param( QStringLiteral( "file" ), QStringLiteral( "file" ) );
 
@@ -10332,7 +10337,7 @@ void TestProcessingGui::testFileOutWrapper()
 
 void TestProcessingGui::testFolderOutWrapper()
 {
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = []( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterFolderDestination param( QStringLiteral( "folder" ), QStringLiteral( "folder" ) );
 
@@ -10874,7 +10879,7 @@ void TestProcessingGui::testPointCloudLayerWrapper()
   QVERIFY( cloud2->isValid() );
   QgsProject::instance()->addMapLayer( cloud2 );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [cloud1, cloud2]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterPointCloudLayer param( QStringLiteral( "cloud" ), QStringLiteral( "cloud" ), false );
 
@@ -11013,7 +11018,7 @@ void TestProcessingGui::testAnnotationLayerWrapper()
   QVERIFY( layer1->isValid() );
   QgsProject::instance()->addMapLayer( layer1 );
 
-  auto testWrapper = [=]( Qgis::ProcessingMode type ) {
+  auto testWrapper = [layer1]( Qgis::ProcessingMode type ) {
     // non optional
     QgsProcessingParameterAnnotationLayer param( QStringLiteral( "annotation" ), QStringLiteral( "annotation" ), false );
 
@@ -11454,6 +11459,42 @@ void TestProcessingGui::testModelGraphicsView()
   }
   // should not exist
   QVERIFY( !layerCommentItem );
+
+  //check model bounds
+  scene2.updateBounds();
+  QRectF modelRect = scene2.sceneRect();
+  QGSCOMPARENEAR( modelRect.height(), 624.4, 3 ); // Sligtly higher threeshold because of various font size can marginally change the bounding rect
+  QGSCOMPARENEAR( modelRect.width(), 655.00, 0.01 );
+  QGSCOMPARENEAR( modelRect.left(), -252.0, 0.01 );
+  QGSCOMPARENEAR( modelRect.top(), -232.0, 0.01 );
+
+
+  // test model large modelRect
+  QgsProcessingModelAlgorithm model2;
+
+  QgsProcessingModelChildAlgorithm algc2;
+  algc2.setChildId( "buffer" );
+  algc2.setAlgorithmId( "native:buffer" );
+  algc2.setPosition( QPointF( 4250, 4250 ) );
+  QgsProcessingModelParameter param1;
+  param1.setParameterName( QStringLiteral( "LAYER" ) );
+  param1.setSize( QSizeF( 500, 400 ) );
+  param1.setPosition( QPointF( -250, -250 ) );
+  model2.addModelParameter( new QgsProcessingParameterMapLayer( QStringLiteral( "LAYER" ) ), param );
+  algc2.addParameterSources( QStringLiteral( "INPUT" ), QList<QgsProcessingModelChildParameterSource>() << QgsProcessingModelChildParameterSource::fromModelParameter( QStringLiteral( "LAYER" ) ) );
+
+  model2.addChildAlgorithm( algc2 );
+
+  QgsModelGraphicsScene scene3;
+  scene3.setModel( &model2 );
+  scene3.createItems( &model2, context );
+
+  scene3.updateBounds();
+  QRectF modelRect2 = scene3.sceneRect();
+  QGSCOMPARENEAR( modelRect2.height(), 4505.4, 3 ); // Sligtly higher threeshold because of various font size can marginally change the bounding rect
+  QGSCOMPARENEAR( modelRect2.width(), 4603.0, 0.01 );
+  QGSCOMPARENEAR( modelRect2.left(), -201.0, 0.01 );
+  QGSCOMPARENEAR( modelRect2.top(), -150.0, 0.01 );
 
 
   QgsModelGraphicsScene scene;

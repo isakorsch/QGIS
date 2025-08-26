@@ -20,6 +20,7 @@
 
 
 #include <QMetaEnum>
+#include <QTimeZone>
 #include <cfloat>
 #include <memory>
 #include <cmath>
@@ -3253,6 +3254,19 @@ class CORE_EXPORT Qgis
     };
     Q_ENUM( PlotAxisSuffixPlacement )
 
+
+    /**
+     * Plots axis types.
+     *
+     * \since QGIS 4.0
+     */
+    enum class PlotAxisType
+    {
+      Interval, //!< The axis represents a range of values
+      Categorical, //!< The axis represents categories
+    };
+    Q_ENUM( PlotAxisType )
+
     /**
      * DpiMode enum
      * \since QGIS 3.26
@@ -3520,6 +3534,7 @@ class CORE_EXPORT Qgis
     {
       RegeneratesPrimaryKey = 1 << 0, //!< Algorithm always drops any existing primary keys or FID values and regenerates them in outputs
       RegeneratesPrimaryKeyInSomeScenarios = 1 << 1, //!< Algorithm may drop the existing primary keys or FID values in some scenarios, depending on algorithm inputs and parameters
+      RespectsEllipsoid = 1 << 2, //!< Algorithm respects the context's ellipsoid settings, and uses ellipsoidal based measurements. \since QGIS 4.0
     };
     Q_ENUM( ProcessingAlgorithmDocumentationFlag )
 
@@ -4446,6 +4461,25 @@ class CORE_EXPORT Qgis
     Q_FLAG( LayerTreeFilterFlags )
 
     /**
+     * Map layer legend flags.
+     *
+     * \since QGIS 4.0
+     */
+    enum class MapLayerLegendFlag : int SIP_ENUM_BASETYPE( IntFlag )
+    {
+      ExcludeByDefault = 1 << 0, //!< If set, the layer should not be included in legends by default, and must be manually added by a user
+    };
+    Q_ENUM( MapLayerLegendFlag )
+
+    /**
+     * Map layer legend flags.
+     *
+     * \since QGIS 4.0
+     */
+    Q_DECLARE_FLAGS( MapLayerLegendFlags, MapLayerLegendFlag )
+    Q_FLAG( MapLayerLegendFlags )
+
+    /**
      * Component of legends which can be styled.
      *
      * Prior to QGIS 3.42 this was available as QgsLegendStyle::Style
@@ -5128,6 +5162,7 @@ class CORE_EXPORT Qgis
       LosslessImageRendering SIP_MONKEYPATCH_COMPAT_NAME( FlagLosslessImageRendering ) = 1 << 10, //!< Render images losslessly whenever possible, instead of the default lossy jpeg rendering used for some destination devices (e.g. PDF).
       SynchronousLegendGraphics SIP_MONKEYPATCH_COMPAT_NAME( FlagSynchronousLegendGraphics ) = 1 << 11, //!< Query legend graphics synchronously.
       AlwaysUseGlobalMasks SIP_MONKEYPATCH_COMPAT_NAME( FlagAlwaysUseGlobalMasks ) = 1 << 12, //!< When applying clipping paths for selective masking, always use global ("entire map") paths, instead of calculating local clipping paths per rendered feature. This results in considerably more complex layout exports in all current Qt versions. This flag only applies to vector layout exports. \since QGIS 3.38
+      LimitCoverageLayerRenderToCurrentFeature = 1 << 13, //!< Limit coverage layer rendering to the current atlas feature. \since QGIS 4.0
     };
     Q_ENUM( LayoutRenderFlag )
 
@@ -5896,6 +5931,10 @@ class CORE_EXPORT Qgis
       ResizeRightUp, //!< Resize right up (Top right handle)
       ResizeLeftDown, //!< Resize left down (Bottom left handle)
       ResizeRightDown, //!< Resize right down (Bottom right handle)
+      RotateTopLeft, //!< Rotate from top left handle. \since QGIS 4.0
+      RotateTopRight, //!< Rotate from top right handle. \since QGIS 4.0
+      RotateBottomLeft, //!< Rotate from bottom left handle. \since QGIS 4.0
+      RotateBottomRight, //!< Rotate right bottom right handle. \since QGIS 4.0
       SelectItem, //!< Select item
       NoAction //!< No action
     };
@@ -6230,7 +6269,9 @@ Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::DataProviderReadFlags )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::VectorProviderCapabilities )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::MapCanvasFlags )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::LayoutRenderFlags )
+Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::MapLayerLegendFlags )
 Q_DECLARE_METATYPE( Qgis::LayoutRenderFlags )
+Q_DECLARE_METATYPE( QTimeZone )
 
 // hack to workaround warnings when casting void pointers
 // retrieved from QLibrary::resolve to function pointers.
@@ -6933,7 +6974,6 @@ typedef unsigned long long qgssize;
   __pragma(warning(disable:4702))
 #define Q_NOWARN_UNREACHABLE_POP \
   __pragma(warning(pop))
-
 #else
 
 #define Q_NOWARN_DEPRECATED_PUSH

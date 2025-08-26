@@ -47,6 +47,7 @@
 #include "qgsprojectbadlayerhandler.h"
 #include "qgsmeshlayer.h"
 #include "qgslayoutmanager.h"
+#include "qgselevationprofilemanager.h"
 #include "qgsbookmarkmanager.h"
 #include "qgsmaplayerstore.h"
 #include "qgsziputils.h"
@@ -115,21 +116,6 @@ QStringList makeKeyTokens_( const QString &scope, const QString &key )
 
   // be sure to include the canonical root node
   keyTokens.push_front( QStringLiteral( "properties" ) );
-
-  //check validy of keys since an invalid xml name will will be dropped upon saving the xml file. If not valid, we print a message to the console.
-  for ( int i = 0; i < keyTokens.size(); ++i )
-  {
-    const QString keyToken = keyTokens.at( i );
-
-    //invalid chars in XML are found at http://www.w3.org/TR/REC-xml/#NT-NameChar
-    //note : it seems \x10000-\xEFFFF is valid, but it when added to the regexp, a lot of unwanted characters remain
-    const thread_local QRegularExpression sInvalidRegexp = QRegularExpression( QStringLiteral( "([^:A-Z_a-z\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{2FF}\\x{370}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}\\-\\.0-9\\x{B7}\\x{0300}-\\x{036F}\\x{203F}-\\x{2040}]|^[^:A-Z_a-z\\x{C0}-\\x{D6}\\x{D8}-\\x{F6}\\x{F8}-\\x{2FF}\\x{370}-\\x{37D}\\x{37F}-\\x{1FFF}\\x{200C}-\\x{200D}\\x{2070}-\\x{218F}\\x{2C00}-\\x{2FEF}\\x{3001}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFFD}])" ) );
-    if ( keyToken.contains( sInvalidRegexp ) )
-    {
-      const QString errorString = QObject::tr( "Entry token invalid : '%1'. The token will not be saved to file." ).arg( keyToken );
-      QgsMessageLog::logMessage( errorString, QString(), Qgis::MessageLevel::Critical );
-    }
-  }
 
   return keyTokens;
 }
@@ -377,6 +363,7 @@ QgsProject::QgsProject( QObject *parent, Qgis::ProjectCapabilities capabilities 
   , mRelationManager( std::make_unique<QgsRelationManager>( this ) )
   , mAnnotationManager( new QgsAnnotationManager( this ) )
   , mLayoutManager( new QgsLayoutManager( this ) )
+  , mElevationProfileManager( new QgsElevationProfileManager( this ) )
   , m3DViewsManager( new QgsMapViewsManager( this ) )
   , mBookmarkManager( QgsBookmarkManager::createProjectBasedManager( this ) )
   , mSensorManager( new QgsSensorManager( this ) )
@@ -1230,6 +1217,7 @@ void QgsProject::clear()
   mRelationManager->clear();
   mAnnotationManager->clear();
   mLayoutManager->clear();
+  mElevationProfileManager->clear();
   m3DViewsManager->clear();
   mBookmarkManager->clear();
   mSensorManager->clear();
@@ -1322,20 +1310,20 @@ void dump_( const QgsProjectPropertyKey &topQgsPropertyKey )
  * scope.  "layers" is a list containing three string values.
  *
  * \code{.xml}
- * <properties>
- *   <fsplugin>
- *     <foo type="int" >42</foo>
- *     <baz type="int" >1</baz>
- *     <layers type="QStringList" >
+ * <properties name="properties">
+ *   <properties name="fsplugin">
+ *     <properties name="foo" type="int" >42</properties>
+ *     <properties name="baz" type="int" >1</properties>
+ *     <properties name="layers" type="QStringList">
  *       <value>railroad</value>
  *       <value>airport</value>
- *     </layers>
- *     <xyqzzy type="int" >1</xyqzzy>
- *     <bar type="double" >123.456</bar>
- *     <feature_types type="QStringList" >
+ *     </properties>
+ *     <properties name="xyqzzy" type="int" >1</properties>
+ *     <properties name="bar" type="double" >123.456</properties>
+ *     <properties name="feature_types" type="QStringList">
  *        <value>type</value>
- *     </feature_types>
- *   </fsplugin>
+ *     </properties>
+ *   </properties>
  * </properties>
  * \endcode
  *
@@ -2549,6 +2537,12 @@ bool QgsProject::readProjectFile( const QString &filename, Qgis::ProjectReadFlag
     mLayoutManager->readXml( doc->documentElement(), *doc );
   }
 
+  {
+    profile.switchTask( tr( "Loading elevation profiles" ) );
+    mElevationProfileManager->readXml( doc->documentElement(), *doc, context );
+    mElevationProfileManager->resolveReferences( this );
+  }
+
   if ( !( flags & Qgis::ProjectReadFlag::DontLoad3DViews ) )
   {
     profile.switchTask( tr( "Loading 3D Views" ) );
@@ -3478,6 +3472,11 @@ bool QgsProject::writeProjectFile( const QString &filename )
   }
 
   {
+    const QDomElement elevationProfileElem = mElevationProfileManager->writeXml( *doc, context );
+    qgisNode.appendChild( elevationProfileElem );
+  }
+
+  {
     const QDomElement views3DElem = m3DViewsManager->writeXml( *doc );
     qgisNode.appendChild( views3DElem );
   }
@@ -3992,10 +3991,25 @@ bool QgsProject::createEmbeddedLayer( const QString &layerId, const QString &pro
   const QDomElement propertiesElem = sProjectDocument.documentElement().firstChildElement( QStringLiteral( "properties" ) );
   if ( !propertiesElem.isNull() )
   {
-    const QDomElement absElem = propertiesElem.firstChildElement( QStringLiteral( "Paths" ) ).firstChildElement( QStringLiteral( "Absolute" ) );
-    if ( !absElem.isNull() )
+    QDomElement e = propertiesElem.firstChildElement( QStringLiteral( "Paths" ) );
+    if ( e.isNull() )
     {
-      useAbsolutePaths = absElem.text().compare( QLatin1String( "true" ), Qt::CaseInsensitive ) == 0;
+      e = propertiesElem.firstChildElement( QStringLiteral( "properties" ) );
+      while ( !e.isNull() && e.attribute( QStringLiteral( "name" ) ) != QStringLiteral( "Paths" ) )
+        e = e.nextSiblingElement( QStringLiteral( "properties" ) );
+
+      e = e.firstChildElement( QStringLiteral( "properties" ) );
+      while ( !e.isNull() && e.attribute( QStringLiteral( "name" ) ) != QStringLiteral( "Absolute" ) )
+        e = e.nextSiblingElement( QStringLiteral( "properties" ) );
+    }
+    else
+    {
+      e = e.firstChildElement( QStringLiteral( "Absolute" ) );
+    }
+
+    if ( !e.isNull() )
+    {
+      useAbsolutePaths = e.text().compare( QLatin1String( "true" ), Qt::CaseInsensitive ) == 0;
     }
   }
 
@@ -4290,6 +4304,20 @@ QgsLayoutManager *QgsProject::layoutManager()
   QGIS_PROTECT_QOBJECT_THREAD_ACCESS
 
   return mLayoutManager.get();
+}
+
+const QgsElevationProfileManager *QgsProject::elevationProfileManager() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  return mElevationProfileManager.get();
+}
+
+QgsElevationProfileManager *QgsProject::elevationProfileManager()
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  return mElevationProfileManager.get();
 }
 
 const QgsMapViewsManager *QgsProject::viewsManager() const
@@ -4591,6 +4619,9 @@ QgsMapLayer *QgsProject::mapLayer( const QString &layerId ) const
 {
   // because QgsVirtualLayerProvider is not anywhere NEAR thread safe:
   QGIS_PROTECT_QOBJECT_THREAD_ACCESS_NON_FATAL
+
+  if ( mMainAnnotationLayer && layerId == mMainAnnotationLayer->id() )
+    return mMainAnnotationLayer;
 
   return mLayerStore->mapLayer( layerId );
 }

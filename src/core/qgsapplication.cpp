@@ -53,6 +53,7 @@
 #include "qgssymbollayerregistry.h"
 #include "qgssymbollayerutils.h"
 #include "qgscalloutsregistry.h"
+#include "qgsplotregistry.h"
 #include "qgspluginlayerregistry.h"
 #include "qgsclassificationmethodregistry.h"
 #include "qgsmessagelog.h"
@@ -294,6 +295,7 @@ void registerMetaTypes()
   qRegisterMetaType< QAuthenticator * >( "QAuthenticator*" );
   qRegisterMetaType< QgsGpsInformation >( "QgsGpsInformation" );
   qRegisterMetaType< QgsSensorThingsExpansionDefinition >( "QgsSensorThingsExpansionDefinition" );
+  qRegisterMetaType< QTimeZone >( "QTimeZone" );
 };
 
 void QgsApplication::init( QString profileFolder )
@@ -814,7 +816,7 @@ QIcon QgsApplication::getThemeIcon( const QString &name, const QColor &fillColor
   QIcon icon;
   const bool colorBased = fillColor.isValid() || strokeColor.isValid();
 
-  auto iconFromColoredSvg = [ = ]( const QString & path ) -> QIcon
+  auto iconFromColoredSvg = [fillColor, strokeColor, cacheKey]( const QString & path ) -> QIcon
   {
     // sizes are unused here!
     const QByteArray svgContent = QgsApplication::svgCache()->svgContent( path, 16, fillColor, strokeColor, 1, 1 );
@@ -2536,6 +2538,11 @@ QgsSensorRegistry *QgsApplication::sensorRegistry()
   return members()->mSensorRegistry.get();
 }
 
+QgsPlotRegistry *QgsApplication::plotRegistry()
+{
+  return members()->mPlotRegistry.get();
+}
+
 QgsGpsConnectionRegistry *QgsApplication::gpsConnectionRegistry()
 {
   return members()->mGpsConnectionRegistry.get();
@@ -2835,6 +2842,12 @@ QgsApplication::ApplicationMembers::ApplicationMembers()
     profiler->end();
   }
   {
+    profiler->start( tr( "Setup plot registry" ) );
+    mPlotRegistry = std::make_unique<QgsPlotRegistry>();
+    mPlotRegistry->populate();
+    profiler->end();
+  }
+  {
     profiler->start( tr( "Setup 3D symbol registry" ) );
     m3DSymbolRegistry = std::make_unique<Qgs3DSymbolRegistry>();
     profiler->end();
@@ -2908,6 +2921,7 @@ QgsApplication::ApplicationMembers::~ApplicationMembers()
   mPageSizeRegistry.reset();
   mAnnotationItemRegistry.reset();
   mSensorRegistry.reset();
+  mPlotRegistry.reset();
   mLayoutItemRegistry.reset();
   mPointCloudRendererRegistry.reset();
   mTiledSceneRendererRegistry.reset();
