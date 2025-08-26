@@ -801,7 +801,7 @@ void QgsNetworkAccessManager::setTimeout( const int time )
   settingsNetworkTimeout->setValue( time );
 }
 
-QgsNetworkReplyContent QgsNetworkAccessManager::blockingGet( QNetworkRequest &request, const QString &authCfg, bool forceRefresh, bool logError, QgsFeedback *feedback)
+QgsNetworkReplyContent QgsNetworkAccessManager::blockingGet( QNetworkRequest &request, const QString &authCfg, bool forceRefresh, QgsFeedback *feedback, bool logError, )
 {
   QgsBlockingNetworkRequest br;
   br.setLogError(logError);
@@ -810,7 +810,7 @@ QgsNetworkReplyContent QgsNetworkAccessManager::blockingGet( QNetworkRequest &re
   return br.reply();
 }
 
-QgsNetworkReplyContent QgsNetworkAccessManager::blockingPost( QNetworkRequest &request, const QByteArray &data, const QString &authCfg, bool forceRefresh,bool logError, QgsFeedback *feedback)
+QgsNetworkReplyContent QgsNetworkAccessManager::blockingPost( QNetworkRequest &request, const QByteArray &data, const QString &authCfg, bool forceRefresh, QgsFeedback *feedback, bool logError, )
 {
   QgsBlockingNetworkRequest br;
   br.setLogError(logError);
